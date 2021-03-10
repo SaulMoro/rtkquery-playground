@@ -1,15 +1,31 @@
 import { NgModule } from '@angular/core';
-import { StoreModule } from '@ngrx/store';
-import { combineReducers } from '@reduxjs/toolkit';
-import { pokemonApi } from './api/pokemon';
+import { ActionReducerMap, StoreModule } from '@ngrx/store';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { StoreQueryModule } from './api';
+import { environment } from 'src/environments/environment';
+import { counterApi } from './services/counter';
+import { postApi } from './services/posts';
+import auth from './features/auth/authSlice';
 
-const reducers = combineReducers({
-  [pokemonApi.reducerPath]: pokemonApi.reducer,
-});
+export type RootState = {
+  [counterApi.reducerPath]: ReturnType<typeof counterApi.reducer>;
+  [postApi.reducerPath]: ReturnType<typeof postApi.reducer>;
+  auth: ReturnType<typeof auth>;
+};
 
-export type RootState = ReturnType<typeof reducers>;
+export const reducers: ActionReducerMap<RootState> = {
+  [counterApi.reducerPath]: counterApi.reducer,
+  [postApi.reducerPath]: postApi.reducer,
+  auth,
+};
 
 @NgModule({
-  imports: [StoreModule.forRoot(reducers)],
+  imports: [
+    StoreModule.forRoot(reducers, {
+      metaReducers: [counterApi.metareducer],
+    }),
+    !environment.production ? StoreDevtoolsModule.instrument() : [],
+    StoreQueryModule.forRoot({ setupListeners: true }),
+  ],
 })
 export class AppStoreModule {}
