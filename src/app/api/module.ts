@@ -9,7 +9,7 @@ import {
 import { MetaReducer } from '@ngrx/store';
 
 import { buildMetaReducer } from './build-metareducer';
-import { buildHooks } from './hooks-build';
+import { buildHooks } from './build-hooks';
 import { capitalize, safeAssign } from './utils';
 import { QueryHooks, MutationHooks, isQueryDefinition, isMutationDefinition } from './hooks-types';
 import { TS41Hooks } from './hooks-ts41-types';
