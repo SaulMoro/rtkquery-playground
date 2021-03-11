@@ -11,12 +11,7 @@ import { MetaReducer } from '@ngrx/store';
 import { buildMetaReducer } from './build-metareducer';
 import { buildHooks } from './hooks-build';
 import { capitalize, safeAssign } from './ts-helpers';
-import {
-  QueryHooks,
-  MutationHooks,
-  isQueryDefinition,
-  isMutationDefinition,
-} from './hooks-types';
+import { QueryHooks, MutationHooks, isQueryDefinition, isMutationDefinition } from './hooks-types';
 import { TS41Hooks } from './ts41Types';
 
 export const angularHooksModuleName = Symbol();
@@ -32,13 +27,7 @@ declare module '@rtk-incubator/rtk-query' {
   > {
     [angularHooksModuleName]: {
       endpoints: {
-        [K in keyof Definitions]: Definitions[K] extends QueryDefinition<
-          any,
-          any,
-          any,
-          any,
-          any
-        >
+        [K in keyof Definitions]: Definitions[K] extends QueryDefinition<any, any, any, any, any>
           ? QueryHooks<Definitions[K]>
           : Definitions[K] extends MutationDefinition<any, any, any, any, any>
           ? MutationHooks<Definitions[K]>
@@ -51,7 +40,7 @@ declare module '@rtk-incubator/rtk-query' {
 export const angularHooksModule = (): Module<AngularHooksModule> => ({
   name: angularHooksModuleName,
   init(api, options, context) {
-    const { buildMutationHook, usePrefetch } = buildHooks(api);
+    const { buildQueryHooks, buildMutationHook, usePrefetch } = buildHooks(api);
     safeAssign(api, { usePrefetch });
     safeAssign(api, {
       metareducer: buildMetaReducer(api.middleware),
@@ -59,15 +48,15 @@ export const angularHooksModule = (): Module<AngularHooksModule> => ({
 
     return {
       injectEndpoint(endpointName, definition) {
-        const anyApi = (api as any) as Api<
-          any,
-          Record<string, any>,
-          string,
-          string,
-          AngularHooksModule
-        >;
+        const anyApi = (api as any) as Api<any, Record<string, any>, string, string, AngularHooksModule>;
         if (isQueryDefinition(definition)) {
-          // TODO:
+          const { useQuery, useQueryState, useQuerySubscription } = buildQueryHooks(endpointName);
+          safeAssign(anyApi.endpoints[endpointName], {
+            useQuery,
+            useQueryState,
+            useQuerySubscription,
+          });
+          (api as any)[`use${capitalize(endpointName)}Query`] = useQuery;
         } else if (isMutationDefinition(definition)) {
           const useMutation = buildMutationHook(endpointName);
           safeAssign(anyApi.endpoints[endpointName], {

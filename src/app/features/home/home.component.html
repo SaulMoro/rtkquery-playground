@@ -1,0 +1,14 @@
+<ng-container *ngIf="countQuery$ | async as query">
+  <button (click)="query.refetch()">Refetch</button>
+  <button (click)="start()">Start new</button>
+  <div>{{ query | json }}</div>
+
+  <h1>Count: {{ query?.data?.count || 0 }}</h1>
+  <button (click)="increase()">Increase</button>
+  <button (click)="decrease()">Decrease</button>
+
+  <h2>Increment state: {{ incrementState$ | async | json }}</h2>
+  <h2>Decrement state: {{ decrementState$ | async | json }}</h2>
+</ng-container>
+
+<app-child></app-child>

@@ -14,8 +14,8 @@ export const counterApi = createApi({
   baseQuery: fetchBaseQuery(),
   entityTypes: ['Counter'],
   endpoints: (build) => ({
-    getCount: build.query<CountResponse, void>({
-      query: () => 'count',
+    getCount: build.query<CountResponse, number>({
+      query: (initValue) => 'count',
       provides: ['Counter'],
     }),
     incrementCount: build.mutation<CountResponse, number>({
@@ -41,8 +41,4 @@ export const counterApi = createApi({
   }),
 });
 
-export const {
-  useDecrementCountMutation,
-  useGetCountQuery,
-  useIncrementCountMutation,
-} = counterApi;
+export const { useGetCountQuery, useIncrementCountMutation, useDecrementCountMutation } = counterApi;

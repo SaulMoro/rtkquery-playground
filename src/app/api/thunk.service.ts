@@ -7,9 +7,7 @@ let service: ThunkService;
 
 export function dispatch<R>(action: Action): Action;
 export function dispatch<R>(action: ThunkAction<R, any, any, AnyAction>): R;
-export function dispatch<R>(
-  action: Action | ThunkAction<R, any, any, AnyAction>
-): R | Action {
+export function dispatch<R>(action: Action | ThunkAction<R, any, any, AnyAction>): R | Action {
   if (typeof action === 'function') {
     return action(dispatch, getState, {});
   }

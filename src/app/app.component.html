@@ -1,12 +1,7 @@
-<ng-container *ngIf="data$ | async as data">
-  <button (click)="start()">Start</button>
-  <div>{{ data | json }}</div>
+<p>
+  <a [routerLink]="['/']">Inicio</a>
+  <br />
+  <a [routerLink]="['/another']">Another</a>
+</p>
 
-  <h1>Count: {{ data?.data?.count || 0 }}</h1>
-  <button (click)="increase()">Increase</button>
-  <button (click)="decrease()">Decrease</button>
-
-  <h2>Increment state: {{ incrementState$ | async | json }}</h2>
-</ng-container>
-
-<app-child></app-child>
+<router-outlet></router-outlet>

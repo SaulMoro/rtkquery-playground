@@ -1,36 +1,38 @@
+import { Api, EndpointDefinitions, MutationDefinition, QueryDefinition } from '@rtk-incubator/rtk-query';
+import { QueryKeys, RootState } from '@rtk-incubator/rtk-query/dist/esm/ts/core/apiState';
 import {
-  Api,
-  EndpointDefinitions,
-  MutationDefinition,
-} from '@rtk-incubator/rtk-query';
-import { QueryKeys } from '@rtk-incubator/rtk-query/dist/esm/ts/core/apiState';
-import { MutationActionCreatorResult } from '@rtk-incubator/rtk-query/dist/esm/ts/core/buildInitiate';
+  MutationActionCreatorResult,
+  QueryActionCreatorResult,
+} from '@rtk-incubator/rtk-query/dist/esm/ts/core/buildInitiate';
 import {
   ApiEndpointMutation,
+  ApiEndpointQuery,
   CoreModule,
   PrefetchOptions,
 } from '@rtk-incubator/rtk-query/dist/esm/ts/core/module';
-import { Subject } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { createSelectorFactory, MemoizedSelectorWithProps, resultMemoize } from '@ngrx/store';
+import { BehaviorSubject } from 'rxjs';
+import { finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
 import {
   DefaultQueryStateSelector,
   GenericPrefetchThunk,
   MutationHook,
   QueryHooks,
+  QueryStateSelector,
+  UseQueryState,
   UseQueryStateDefaultResult,
   UseQuerySubscription,
 } from './hooks-types';
 import { dispatch, select } from './thunk.service';
+import { shallowEqual } from './utils';
+import { of } from 'rxjs';
+import { isObservable } from 'rxjs';
+import { safeAssign } from './ts-helpers';
 
-const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (
-  currentState,
-  lastResult
-) => {
+const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (currentState, lastResult) => {
   // data is the last known good request result we have tracked - or if none has been tracked yet the last good result for the current args
-  const data =
-    (currentState.isSuccess ? currentState.data : lastResult?.data) ??
-    currentState.data;
+  const data = (currentState.isSuccess ? currentState.data : lastResult?.data) ?? currentState.data;
 
   // isFetching = true any time a request is in flight
   const isFetching = currentState.isLoading;
@@ -51,7 +53,7 @@ const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (
 export function buildHooks<Definitions extends EndpointDefinitions>(
   api: Api<any, Definitions, any, string, CoreModule>
 ) {
-  return { buildMutationHook, usePrefetch };
+  return { buildQueryHooks, buildMutationHook, usePrefetch };
 
   function usePrefetch<EndpointName extends QueryKeys<Definitions>>(
     endpointName: EndpointName,
@@ -66,48 +68,109 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       );
   }
 
-  function buildMutationHook(name: string): MutationHook<any> {
-    return () => {
-      console.log('entro 2');
-      const { initiate, select: apiSelector } = api.endpoints[
-        name
-      ] as ApiEndpointMutation<
-        MutationDefinition<any, any, any, any, any>,
-        Definitions
-      >;
-      const requestId$ = new Subject<string>();
-      let promiseRef: MutationActionCreatorResult<any>;
+  function buildQueryHooks(name: string): QueryHooks<any> {
+    const { initiate, select: selectApi } = api.endpoints[name] as ApiEndpointQuery<
+      QueryDefinition<any, any, any, any, any>,
+      Definitions
+    >;
 
-      const triggerMutation = (args: any) => {
-        if (promiseRef) {
-          promiseRef.unsubscribe();
+    const promiseRef: { current?: QueryActionCreatorResult<any> } = {};
+    const useQuerySubscription: UseQuerySubscription<any> = (
+      arg: any,
+      { refetchOnReconnect, refetchOnFocus, pollingInterval = 0 } = {}
+    ) => {
+      const lastPromise = promiseRef.current;
+      if (lastPromise && lastPromise.arg === arg) {
+        // arg did not change, but options did probably, update them
+        lastPromise.updateSubscriptionOptions({
+          pollingInterval,
+          refetchOnReconnect,
+          refetchOnFocus,
+        });
+      } else {
+        if (lastPromise) {
+          lastPromise.unsubscribe();
         }
+        const promise = dispatch(
+          initiate(arg, {
+            subscriptionOptions: {
+              pollingInterval,
+              refetchOnReconnect,
+              refetchOnFocus,
+            },
+          })
+        );
+        promiseRef.current = promise;
+      }
 
-        promiseRef = dispatch<MutationActionCreatorResult<any>>(initiate(args));
-        requestId$.next(promiseRef.requestId);
+      return { refetch: () => promiseRef.current?.refetch() };
+    };
 
-        return promiseRef;
-      };
+    const lastValue: { current?: any } = {};
+    const useQueryState: UseQueryState<any> = (
+      arg: any,
+      { selectFromResult = defaultQueryStateSelector as QueryStateSelector<any, any> } = {}
+    ) => {
+      const querySelector: MemoizedSelectorWithProps<any, any, any> = createSelectorFactory((projector) =>
+        resultMemoize(projector, shallowEqual)
+      )(
+        [selectApi(arg), (_: any, lastResult: any) => lastResult],
+        (subState: any, lastResult: any) =>
+          subState && selectFromResult(subState, lastResult, defaultQueryStateSelector)
+      );
 
-      return [
-        triggerMutation,
-        requestId$.pipe(
-          switchMap((requestId) => select(apiSelector(requestId)))
-        ),
-      ];
+      return select((state: RootState<Definitions, any, any>) => {
+        return querySelector(state, lastValue.current);
+      }).pipe(tap((value) => (lastValue.current = value)));
+    };
+
+    return {
+      useQueryState,
+      useQuerySubscription,
+      useQuery(arg, options) {
+        return (isObservable(arg) ? arg : of(arg)).pipe(
+          switchMap((argument) => {
+            const querySubscriptionResults = useQuerySubscription(argument, options);
+            const queryStateResults = useQueryState(argument, options);
+            return queryStateResults.pipe(map((queryState) => ({ ...queryState, ...querySubscriptionResults })));
+          })
+        );
+      },
     };
   }
 
-  /* function buildQueryHooks(name: string): QueryHooks<any> {
-    const useQuerySubscription: UseQuerySubscription<any> = (
-      arg: any,
-      {
-        refetchOnReconnect,
-        refetchOnFocus,
-        refetchOnMountOrArgChange,
-        skip = false,
-        pollingInterval = 0,
-      } = {}
-    ) => {};
-  } */
+  function buildMutationHook(name: string): MutationHook<any> {
+    const { initiate, select: apiSelector } = api.endpoints[name] as ApiEndpointMutation<
+      MutationDefinition<any, any, any, any, any>,
+      Definitions
+    >;
+
+    return () => {
+      const promiseRef: { current?: MutationActionCreatorResult<any> } = {};
+      const requestIdSubject = new BehaviorSubject<string>('');
+      const requestId$ = requestIdSubject.asObservable().pipe(shareReplay(1));
+
+      const triggerMutation = (args: any) => {
+        if (promiseRef.current) {
+          promiseRef.current.unsubscribe();
+        }
+
+        const promise = dispatch(initiate(args));
+        promiseRef.current = promise;
+        requestIdSubject.next(promise.requestId);
+
+        return promise;
+      };
+
+      const state = requestId$.pipe(
+        finalize(() => {
+          promiseRef.current?.unsubscribe();
+          promiseRef.current = undefined;
+        }),
+        switchMap((requestId) => select(apiSelector(requestId)))
+      );
+
+      return { dispatch: triggerMutation, state };
+    };
+  }
 }
