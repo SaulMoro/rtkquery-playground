@@ -12,7 +12,7 @@ import {
 } from '@rtk-incubator/rtk-query/dist/esm/ts/core/module';
 import { createSelectorFactory, MemoizedSelectorWithProps, resultMemoize } from '@ngrx/store';
 import { BehaviorSubject, of, isObservable } from 'rxjs';
-import { finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { distinctUntilChanged, finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
 import { dispatch, select } from './thunk.service';
 import {
@@ -77,6 +77,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       { refetchOnReconnect, refetchOnFocus, pollingInterval = 0 } = {}
     ) => {
       const lastPromise = promiseRef.current;
+
       if (lastPromise && lastPromise.arg === arg) {
         // arg did not change, but options did probably, update them
         lastPromise.updateSubscriptionOptions({
@@ -103,11 +104,11 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       return { refetch: () => promiseRef.current?.refetch() };
     };
 
-    const lastValue: { current?: any } = {};
     const useQueryState: UseQueryState<any> = (
       arg: any,
       { selectFromResult = defaultQueryStateSelector as QueryStateSelector<any, any> } = {}
     ) => {
+      const lastValue: { current?: any } = {};
       const querySelector: MemoizedSelectorWithProps<any, any, any> = createSelectorFactory((projector) =>
         resultMemoize(projector, shallowEqual)
       )([selectApi(arg), (_: any, lastResult: any) => lastResult], (subState: any, lastResult: any) =>
@@ -124,10 +125,15 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       useQuerySubscription,
       useQuery(arg, options) {
         return (isObservable(arg) ? arg : of(arg)).pipe(
+          distinctUntilChanged(),
           switchMap((argument) => {
             const querySubscriptionResults = useQuerySubscription(argument, options);
             const queryStateResults = useQueryState(argument, options);
             return queryStateResults.pipe(map((queryState) => ({ ...queryState, ...querySubscriptionResults })));
+          }),
+          finalize(() => {
+            void promiseRef.current?.unsubscribe();
+            promiseRef.current = undefined;
           })
         );
       },

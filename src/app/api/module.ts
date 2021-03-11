@@ -49,6 +49,7 @@ export const angularHooksModule = (): Module<AngularHooksModule> => ({
     return {
       injectEndpoint(endpointName, definition) {
         const anyApi = (api as any) as Api<any, Record<string, any>, string, string, AngularHooksModule>;
+
         if (isQueryDefinition(definition)) {
           const { useQuery, useQueryState, useQuerySubscription } = buildQueryHooks(endpointName);
           safeAssign(anyApi.endpoints[endpointName], {

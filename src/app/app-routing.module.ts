@@ -17,6 +17,7 @@ const routes: Routes = [
     loadChildren: () =>
       import('./features/another/another.module').then((m) => m.AnotherModule),
   },
+  { path: 'none', loadChildren: () => import('./features/none/none.module').then(m => m.NoneModule) },
 ];
 
 @NgModule({
