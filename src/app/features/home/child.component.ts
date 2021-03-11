@@ -9,7 +9,7 @@ import { useIncrementCountMutation } from '../../services/counter';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChildComponent implements OnInit {
-  private incrementMutation = useIncrementCountMutation();
+  incrementMutation = useIncrementCountMutation();
   incrementState$ = this.incrementMutation.state;
 
   constructor() {}

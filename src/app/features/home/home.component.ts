@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import {
-  counterApi,
   useGetCountQuery,
   useIncrementCountMutation,
   useDecrementCountMutation,
+  useCountPrefetch,
 } from '../../services/counter';
 
 @Component({
@@ -15,24 +15,32 @@ import {
 export class HomeComponent implements OnInit {
   id = new BehaviorSubject<number>(0);
   obs$ = this.id.asObservable();
+
+  // Count Query
   countQuery$ = useGetCountQuery(this.obs$);
 
+  // Increment Mutation
   incrementMutation = useIncrementCountMutation();
   incrementState$ = this.incrementMutation.state;
 
+  // Decrement Mutation
   decrementMutation = useDecrementCountMutation();
   decrementState$ = this.decrementMutation.state;
+
+  // Prefetch
+  prefetchCount = useCountPrefetch('getCount');
 
   constructor() {}
 
   ngOnInit() {}
 
   start() {
+    // Simulate change arg
     this.id.next(2);
   }
 
   prefetch() {
-    counterApi.usePrefetch('getCount', { force: true });
+    this.prefetchCount(2, { force: true });
   }
 
   increase() {

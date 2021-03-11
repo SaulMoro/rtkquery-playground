@@ -41,4 +41,10 @@ export const counterApi = createApi({
   }),
 });
 
-export const { useGetCountQuery, useIncrementCountMutation, useDecrementCountMutation } = counterApi;
+export const {
+  useGetCountQuery,
+  useIncrementCountMutation,
+  useDecrementCountMutation,
+  usePrefetch: useCountPrefetch,
+  endpoints: counterEndpoints,
+} = counterApi;

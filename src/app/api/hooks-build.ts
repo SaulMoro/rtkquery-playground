@@ -11,9 +11,10 @@ import {
   PrefetchOptions,
 } from '@rtk-incubator/rtk-query/dist/esm/ts/core/module';
 import { createSelectorFactory, MemoizedSelectorWithProps, resultMemoize } from '@ngrx/store';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of, isObservable } from 'rxjs';
 import { finalize, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
+import { dispatch, select } from './thunk.service';
 import {
   DefaultQueryStateSelector,
   GenericPrefetchThunk,
@@ -24,11 +25,7 @@ import {
   UseQueryStateDefaultResult,
   UseQuerySubscription,
 } from './hooks-types';
-import { dispatch, select } from './thunk.service';
 import { shallowEqual } from './utils';
-import { of } from 'rxjs';
-import { isObservable } from 'rxjs';
-import { safeAssign } from './ts-helpers';
 
 const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (currentState, lastResult) => {
   // data is the last known good request result we have tracked - or if none has been tracked yet the last good result for the current args
@@ -113,10 +110,8 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
     ) => {
       const querySelector: MemoizedSelectorWithProps<any, any, any> = createSelectorFactory((projector) =>
         resultMemoize(projector, shallowEqual)
-      )(
-        [selectApi(arg), (_: any, lastResult: any) => lastResult],
-        (subState: any, lastResult: any) =>
-          subState && selectFromResult(subState, lastResult, defaultQueryStateSelector)
+      )([selectApi(arg), (_: any, lastResult: any) => lastResult], (subState: any, lastResult: any) =>
+        selectFromResult(subState, lastResult, defaultQueryStateSelector)
       );
 
       return select((state: RootState<Definitions, any, any>) => {

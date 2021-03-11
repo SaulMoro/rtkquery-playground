@@ -10,9 +10,9 @@ import { MetaReducer } from '@ngrx/store';
 
 import { buildMetaReducer } from './build-metareducer';
 import { buildHooks } from './hooks-build';
-import { capitalize, safeAssign } from './ts-helpers';
+import { capitalize, safeAssign } from './utils';
 import { QueryHooks, MutationHooks, isQueryDefinition, isMutationDefinition } from './hooks-types';
-import { TS41Hooks } from './ts41Types';
+import { TS41Hooks } from './hooks-ts41-types';
 
 export const angularHooksModuleName = Symbol();
 export type AngularHooksModule = typeof angularHooksModuleName;
