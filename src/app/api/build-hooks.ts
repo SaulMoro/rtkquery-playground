@@ -149,7 +149,6 @@ export function buildHooks<Definitions extends EndpointDefinitions>({
       ).pipe(
         distinctUntilChanged(shallowEqual),
         switchMap(({ currentArg, currentOptions }: { currentArg: any; currentOptions?: UseQueryOptions<any, any> }) => {
-          console.log({ currentArg, currentOptions });
           const querySubscriptionResults = useQuerySubscription(currentArg, currentOptions);
           const queryStateResults = useQueryState(currentArg, currentOptions);
           return queryStateResults.pipe(map((queryState) => ({ ...queryState, ...querySubscriptionResults })));
