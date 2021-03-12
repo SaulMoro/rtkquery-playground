@@ -1,0 +1,21 @@
+<main>
+  <h3>Haunted counters?</h3>
+  <p><small>We heard that any counters you might add below are haunted! </small></p>
+  <button (click)="addCounter()">Add counter</button>
+
+  <div *ngIf="counters.length >= 2">
+    <button class="button-link" (click)="toggleGlobalPolling()">
+      Turn {{ globalPollingEnabled ? "off" : "on" }} polling
+    </button>
+  </div>
+
+  <app-counter-detail *ngFor="let counter of counters" [id]="counter"></app-counter-detail>
+
+  <div *ngIf="counters.length" class="stop">
+    <small>
+      <button class="button-link" (click)="spookyModeOff()" [disabled]="!spookyMode">
+        {{ spookyMode ? "Im scared, stop it!" : "No fun" }}
+      </button>
+    </small>
+  </div>
+</main>

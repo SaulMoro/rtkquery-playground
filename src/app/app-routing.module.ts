@@ -9,15 +9,14 @@ const routes: Routes = [
   },
   {
     path: 'home',
-    loadChildren: () =>
-      import('./features/home/home.module').then((m) => m.HomeModule),
+    loadChildren: () => import('./features/home/home.module').then((m) => m.HomeModule),
   },
   {
     path: 'another',
-    loadChildren: () =>
-      import('./features/another/another.module').then((m) => m.AnotherModule),
+    loadChildren: () => import('./features/another/another.module').then((m) => m.AnotherModule),
   },
-  { path: 'none', loadChildren: () => import('./features/none/none.module').then(m => m.NoneModule) },
+  { path: 'counters', loadChildren: () => import('./features/counter/counter.module').then((m) => m.CounterModule) },
+  { path: 'none', loadChildren: () => import('./features/none/none.module').then((m) => m.NoneModule) },
 ];
 
 @NgModule({

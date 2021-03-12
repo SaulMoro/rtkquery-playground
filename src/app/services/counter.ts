@@ -19,12 +19,19 @@ export const counterApi = createApi({
       provides: ['Counter'],
     }),
     incrementCount: build.mutation<CountResponse, number>({
-      query(amount) {
-        return {
-          url: `increment`,
-          method: 'PUT',
-          body: { amount },
-        };
+      query: (amount) => ({ url: `increment`, method: 'PUT', body: { amount } }),
+      onStart(amount: number, { dispatch, context }) {
+        console.log('onStart', { dispatch, context });
+        // When we start the request, just immediately update the cache
+        context.undoPost = dispatch(
+          counterApi.util.updateQueryResult('getCount', 0, (draft) => {
+            Object.assign(draft, { count: draft.count + amount });
+          })
+        ).inversePatches;
+      },
+      onError(_, { dispatch, context }) {
+        // If there is an error, roll it back
+        dispatch(counterApi.util.patchQueryResult('getCount', 0, context.undoPost));
       },
       invalidates: ['Counter'],
     }),

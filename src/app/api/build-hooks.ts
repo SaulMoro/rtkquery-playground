@@ -91,6 +91,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>({
       arg: any,
       { refetchOnReconnect, refetchOnFocus, refetchOnMountOrArgChange, skip = false, pollingInterval = 0 } = {}
     ) => {
+      console.log('useQuerySubscription', arg);
       if (!skip) {
         const lastPromise = promiseRef;
         if (lastPromise && lastPromise.arg === arg) {
@@ -147,7 +148,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>({
           map(([currentOptions, currentArg]) => ({ currentArg, currentOptions }))
         )
       ).pipe(
-        distinctUntilChanged(shallowEqual),
+        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
         switchMap(({ currentArg, currentOptions }: { currentArg: any; currentOptions?: UseQueryOptions<any, any> }) => {
           const querySubscriptionResults = useQuerySubscription(currentArg, currentOptions);
           const queryStateResults = useQueryState(currentArg, currentOptions);

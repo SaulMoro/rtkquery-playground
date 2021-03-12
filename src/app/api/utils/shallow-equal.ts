@@ -1,5 +1,3 @@
-/* eslint-disable no-self-compare */
-
 function is(x: any, y: any) {
   if (x === y) {
     return x !== 0 || y !== 0 || 1 / x === 1 / y;
