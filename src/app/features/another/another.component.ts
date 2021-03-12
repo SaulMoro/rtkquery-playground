@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { UseQueryOptions } from 'src/app/api/hooks-types';
-import { useGetCountQuery } from 'src/app/services/counter';
+import { QueryOptions } from 'src/app/api';
+import { useGetCountQuery } from '../../services/counter';
+
+type test = { data: any; isLoading: boolean; isUninitialized: boolean };
 
 @Component({
   selector: 'app-another',
@@ -10,7 +12,14 @@ import { useGetCountQuery } from 'src/app/services/counter';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AnotherComponent implements OnInit {
-  options = new BehaviorSubject<UseQueryOptions<any, any>>({ skip: true });
+  options = new BehaviorSubject<QueryOptions<test>>({
+    skip: true,
+    selectFromResult: ({ data, isLoading, isUninitialized }) => ({
+      data,
+      isLoading,
+      isUninitialized,
+    }),
+  });
   options$ = this.options.asObservable();
 
   countQuery$ = useGetCountQuery(0, this.options$);
@@ -20,6 +29,6 @@ export class AnotherComponent implements OnInit {
   ngOnInit(): void {}
 
   start(): void {
-    this.options.next({ skip: false });
+    this.options.next({ ...this.options.value, skip: false });
   }
 }

@@ -25,7 +25,7 @@ export class HomeComponent implements OnInit {
 
   // Count Query
   countQuery$ = useGetCountQuery(this.obs$, {
-    selectFromResult: ({ data, isLoading }) => ({ data, isLoading }),
+    selectFromResult: ({ data, isLoading, isSuccess }) => ({ data, isLoading, isSuccess }),
   });
   // Increment Mutation State
   incrementState$ = incrementMutation.state;

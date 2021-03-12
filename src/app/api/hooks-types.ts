@@ -34,6 +34,11 @@ export type UseQueryOptions<
   R = UseQueryStateDefaultResult<D>
 > = UseQuerySubscriptionOptions & UseQueryStateOptions<D, R>;
 
+export type QueryOptions<SelectFromResultType = UseQueryStateDefaultResult<any>> = UseQueryOptions<
+  any,
+  SelectFromResultType
+>;
+
 export interface UseQuerySubscriptionOptions extends SubscriptionOptions {
   skip?: boolean | Observable<boolean>;
   refetchOnMountOrArgChange?: boolean | number;
