@@ -24,8 +24,9 @@ export function shallowEqual(objA: any, objB: any) {
     return false;
   }
 
-  for (const keyA of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(objB, keyA) || !is(objA[keyA], objB[keyA])) {
+  // tslint:disable-next-line: prefer-for-of
+  for (let i = 0; i < keysA.length; i++) {
+    if (!Object.prototype.hasOwnProperty.call(objB, keysA[i]) || !is(objA[keysA[i]], objB[keysA[i]])) {
       return false;
     }
   }

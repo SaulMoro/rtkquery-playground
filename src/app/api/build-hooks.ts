@@ -23,7 +23,6 @@ import {
   withLatestFrom,
 } from 'rxjs/operators';
 
-import { dispatch, select } from './thunk.service';
 import {
   DefaultQueryStateSelector,
   GenericPrefetchThunk,
@@ -37,6 +36,7 @@ import {
   UseQuerySubscription,
 } from './hooks-types';
 import { shallowEqual } from './utils';
+import { AngularHooksModuleOptions } from './module';
 
 const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (currentState, lastResult) => {
   // data is the last known good request result we have tracked - or if none has been tracked yet the last good result for the current args
@@ -58,9 +58,13 @@ const defaultQueryStateSelector: DefaultQueryStateSelector<any> = (currentState,
   } as UseQueryStateDefaultResult<any>;
 };
 
-export function buildHooks<Definitions extends EndpointDefinitions>(
-  api: Api<any, Definitions, any, string, CoreModule>
-) {
+export function buildHooks<Definitions extends EndpointDefinitions>({
+  api,
+  moduleOptions: { useDispatch: dispatch, useSelector },
+}: {
+  api: Api<any, Definitions, any, string, CoreModule>;
+  moduleOptions: Required<AngularHooksModuleOptions>;
+}) {
   return { buildQueryHooks, buildMutationHook, usePrefetch };
 
   function usePrefetch<EndpointName extends QueryKeys<Definitions>>(
@@ -77,7 +81,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
   }
 
   function buildQueryHooks(name: string): QueryHooks<any> {
-    const { initiate, select: selectApi } = api.endpoints[name] as ApiEndpointQuery<
+    const { initiate, select } = api.endpoints[name] as ApiEndpointQuery<
       QueryDefinition<any, any, any, any, any>,
       Definitions
     >;
@@ -120,12 +124,11 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       let lastValue: any;
       const querySelector: MemoizedSelectorWithProps<any, any, any> = createSelectorFactory((projector) =>
         resultMemoize(projector, shallowEqual)
-      )(
-        [selectApi(!skip ? arg : undefined), (_: any, lastResult: any) => lastResult],
-        (subState: any, lastResult: any) => selectFromResult(subState, lastResult, defaultQueryStateSelector)
+      )([select(!skip ? arg : undefined), (_: any, lastResult: any) => lastResult], (subState: any, lastResult: any) =>
+        selectFromResult(subState, lastResult, defaultQueryStateSelector)
       );
 
-      return select((state: RootState<Definitions, any, any>) => querySelector(state, lastValue)).pipe(
+      return useSelector((state: RootState<Definitions, any, any>) => querySelector(state, lastValue)).pipe(
         tap((value) => (lastValue = value))
       );
     };
@@ -146,6 +149,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       ).pipe(
         distinctUntilChanged(shallowEqual),
         switchMap(({ currentArg, currentOptions }: { currentArg: any; currentOptions?: UseQueryOptions<any, any> }) => {
+          console.log({ currentArg, currentOptions });
           const querySubscriptionResults = useQuerySubscription(currentArg, currentOptions);
           const queryStateResults = useQueryState(currentArg, currentOptions);
           return queryStateResults.pipe(map((queryState) => ({ ...queryState, ...querySubscriptionResults })));
@@ -166,7 +170,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
   }
 
   function buildMutationHook(name: string): MutationHook<any> {
-    const { initiate, select: apiSelector } = api.endpoints[name] as ApiEndpointMutation<
+    const { initiate, select } = api.endpoints[name] as ApiEndpointMutation<
       MutationDefinition<any, any, any, any, any>,
       Definitions
     >;
@@ -192,7 +196,7 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
           promiseRef?.unsubscribe();
           promiseRef = null;
         }),
-        switchMap((requestId) => select(apiSelector(requestId)))
+        switchMap((requestId) => useSelector(select(requestId)))
       );
 
       return { dispatch: triggerMutation, state };

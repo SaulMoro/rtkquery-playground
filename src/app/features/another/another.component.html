@@ -6,3 +6,12 @@
     <button (click)="countQuery.refetch()">Refetch</button>
   </ng-template>
 </ng-container>
+
+<ng-container *ngIf="countSkipQuery$ | async as countSkipQuery">
+  <p>countSkipQuery: {{ countSkipQuery | json }}</p>
+
+  <button *ngIf="countSkipQuery.isUninitialized; else initialized" (click)="start2()">Start</button>
+  <ng-template #initialized>
+    <button (click)="countSkipQuery.refetch()">Refetch</button>
+  </ng-template>
+</ng-container>

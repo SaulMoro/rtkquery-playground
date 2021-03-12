@@ -3,7 +3,7 @@
   <button (click)="start()">Start new</button>
   <div>{{ query | json }}</div>
 
-  <h1>Count: {{ query?.data?.count || 0 }}</h1>
+  <h1>Count: {{ query.data?.count || 0 }}</h1>
   <button (click)="increase()">Increase</button>
   <button (click)="decrease()">Decrease</button>
 

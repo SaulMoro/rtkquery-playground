@@ -13,6 +13,7 @@ import { buildHooks } from './build-hooks';
 import { capitalize, safeAssign } from './utils';
 import { QueryHooks, MutationHooks, isQueryDefinition, isMutationDefinition } from './hooks-types';
 import { TS41Hooks } from './hooks-ts41-types';
+import { dispatch, getState as getStateFromStore, select } from './thunk.service';
 
 export const angularHooksModuleName = Symbol();
 export type AngularHooksModule = typeof angularHooksModuleName;
@@ -37,13 +38,26 @@ declare module '@rtk-incubator/rtk-query' {
   }
 }
 
-export const angularHooksModule = (): Module<AngularHooksModule> => ({
+export interface AngularHooksModuleOptions {
+  useDispatch?: typeof dispatch;
+  getState?: typeof getStateFromStore;
+  useSelector?: typeof select;
+}
+
+export const angularHooksModule = ({
+  useDispatch = dispatch,
+  useSelector = select,
+  getState = getStateFromStore,
+}: AngularHooksModuleOptions = {}): Module<AngularHooksModule> => ({
   name: angularHooksModuleName,
   init(api, options, context) {
-    const { buildQueryHooks, buildMutationHook, usePrefetch } = buildHooks(api);
+    const { buildQueryHooks, buildMutationHook, usePrefetch } = buildHooks({
+      api,
+      moduleOptions: { useDispatch, useSelector, getState },
+    });
     safeAssign(api, { usePrefetch });
     safeAssign(api, {
-      metareducer: buildMetaReducer(api.middleware),
+      metareducer: buildMetaReducer({ middleware: api.middleware, moduleOptions: { useDispatch, getState } }),
     });
 
     return {
