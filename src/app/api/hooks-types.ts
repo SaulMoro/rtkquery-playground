@@ -46,7 +46,8 @@ export interface UseQuerySubscriptionOptions extends SubscriptionOptions {
 
 export type UseQuerySubscription<D extends QueryDefinition<any, any, any, any>> = (
   arg: QueryArgFrom<D>,
-  options?: UseQuerySubscriptionOptions
+  options?: UseQuerySubscriptionOptions,
+  promiseRef?: { current?: QueryActionCreatorResult<D> }
 ) => Pick<QueryActionCreatorResult<D>, 'refetch'>;
 
 export type QueryStateSelector<R, D extends QueryDefinition<any, any, any, any>> = (
@@ -62,7 +63,8 @@ export type DefaultQueryStateSelector<D extends QueryDefinition<any, any, any, a
 
 export type UseQueryState<D extends QueryDefinition<any, any, any, any>> = <R = UseQueryStateDefaultResult<D>>(
   arg: QueryArgFrom<D>,
-  options?: UseQueryStateOptions<D, R>
+  options?: UseQueryStateOptions<D, R>,
+  lastValue?: { current?: UseQueryStateResult<D, R> }
 ) => Observable<UseQueryStateResult<D, R>>;
 
 export type UseQueryStateOptions<D extends QueryDefinition<any, any, any, any>, R> = {
