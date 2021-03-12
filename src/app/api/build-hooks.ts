@@ -82,13 +82,13 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
       Definitions
     >;
 
-    const promiseRef: { current?: QueryActionCreatorResult<any> } = {};
+    let promiseRef: QueryActionCreatorResult<any> | null = null;
     const useQuerySubscription: UseQuerySubscription<any> = (
       arg: any,
       { refetchOnReconnect, refetchOnFocus, refetchOnMountOrArgChange, skip = false, pollingInterval = 0 } = {}
     ) => {
       if (!skip) {
-        const lastPromise = promiseRef.current;
+        const lastPromise = promiseRef;
         if (lastPromise && lastPromise.arg === arg) {
           // arg did not change, but options did probably, update them
           lastPromise.updateSubscriptionOptions({
@@ -106,18 +106,18 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
               forceRefetch: refetchOnMountOrArgChange,
             })
           );
-          promiseRef.current = promise;
+          promiseRef = promise;
         }
       }
 
-      return { refetch: () => void promiseRef.current?.refetch() };
+      return { refetch: () => void promiseRef?.refetch() };
     };
 
-    const lastValue: { current?: any } = {};
     const useQueryState: UseQueryState<any> = (
       arg: any,
       { skip = false, selectFromResult = defaultQueryStateSelector as QueryStateSelector<any, any> } = {}
     ) => {
+      let lastValue: any;
       const querySelector: MemoizedSelectorWithProps<any, any, any> = createSelectorFactory((projector) =>
         resultMemoize(projector, shallowEqual)
       )(
@@ -125,9 +125,8 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
         (subState: any, lastResult: any) => selectFromResult(subState, lastResult, defaultQueryStateSelector)
       );
 
-      return select((state: RootState<Definitions, any, any>) => querySelector(state, lastValue.current)).pipe(
-        tap(console.log),
-        tap((value) => (lastValue.current = value))
+      return select((state: RootState<Definitions, any, any>) => querySelector(state, lastValue)).pipe(
+        tap((value) => (lastValue = value))
       );
     };
 
@@ -153,8 +152,8 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
         }),
         shareReplay(1),
         finalize(() => {
-          void promiseRef.current?.unsubscribe();
-          promiseRef.current = undefined;
+          void promiseRef?.unsubscribe();
+          promiseRef = null;
         })
       );
     };
@@ -173,26 +172,25 @@ export function buildHooks<Definitions extends EndpointDefinitions>(
     >;
 
     return () => {
-      const promiseRef: { current?: MutationActionCreatorResult<any> } = {};
+      let promiseRef: MutationActionCreatorResult<any> | null = null;
       const requestIdSubject = new BehaviorSubject<string>('');
       const requestId$ = requestIdSubject.asObservable();
 
       const triggerMutation = (args: any) => {
-        if (promiseRef.current) {
-          promiseRef.current.unsubscribe();
+        if (promiseRef) {
+          promiseRef?.unsubscribe();
         }
 
-        const promise = dispatch(initiate(args));
-        promiseRef.current = promise;
-        requestIdSubject.next(promise.requestId);
+        promiseRef = dispatch(initiate(args));
+        requestIdSubject.next(promiseRef.requestId);
 
-        return promise;
+        return promiseRef;
       };
 
       const state = requestId$.pipe(
         finalize(() => {
-          promiseRef.current?.unsubscribe();
-          promiseRef.current = undefined;
+          promiseRef?.unsubscribe();
+          promiseRef = null;
         }),
         switchMap((requestId) => select(apiSelector(requestId)))
       );
