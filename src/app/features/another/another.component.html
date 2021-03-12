@@ -1,1 +1,8 @@
-<p>{{ countQuery$ | async | json }}</p>
+<ng-container *ngIf="countQuery$ | async as countQuery">
+  <p>countQuery: {{ countQuery | json }}</p>
+
+  <button *ngIf="countQuery.isUninitialized; else initialized" (click)="start()">Start</button>
+  <ng-template #initialized>
+    <button (click)="countQuery.refetch()">Refetch</button>
+  </ng-template>
+</ng-container>

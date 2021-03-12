@@ -7,6 +7,12 @@ import {
   useCountPrefetch,
 } from '../../services/counter';
 
+const incrementMutation = useIncrementCountMutation();
+const decrementMutation = useDecrementCountMutation();
+
+// Prefetch
+const prefetchCount = useCountPrefetch('getCount');
+
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -18,18 +24,13 @@ export class HomeComponent implements OnInit {
   obs$ = this.id.asObservable();
 
   // Count Query
-  countQuery$ = useGetCountQuery(this.obs$);
-
-  // Increment Mutation
-  incrementMutation = useIncrementCountMutation();
-  incrementState$ = this.incrementMutation.state;
-
-  // Decrement Mutation
-  decrementMutation = useDecrementCountMutation();
-  decrementState$ = this.decrementMutation.state;
-
-  // Prefetch
-  prefetchCount = useCountPrefetch('getCount');
+  countQuery$ = useGetCountQuery(this.obs$, {
+    selectFromResult: ({ data, isLoading }) => ({ data, isLoading }),
+  });
+  // Increment Mutation State
+  incrementState$ = incrementMutation.state;
+  // Decrement Mutation State
+  decrementState$ = decrementMutation.state;
 
   constructor() {}
 
@@ -41,14 +42,14 @@ export class HomeComponent implements OnInit {
   }
 
   prefetch() {
-    this.prefetchCount(2, { force: true });
+    prefetchCount(2, { force: true });
   }
 
   increase() {
-    this.incrementMutation.dispatch(1);
+    incrementMutation.dispatch(1);
   }
 
   decrease() {
-    this.decrementMutation.dispatch(1);
+    decrementMutation.dispatch(1);
   }
 }

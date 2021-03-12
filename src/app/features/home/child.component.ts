@@ -1,6 +1,8 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { useIncrementCountMutation } from '../../services/counter';
 
+const incrementMutation = useIncrementCountMutation();
+
 @Component({
   selector: 'app-child',
   template: ` <button (click)="increase()">Increase in child component</button>
@@ -9,14 +11,13 @@ import { useIncrementCountMutation } from '../../services/counter';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChildComponent implements OnInit {
-  incrementMutation = useIncrementCountMutation();
-  incrementState$ = this.incrementMutation.state;
+  incrementState$ = incrementMutation.state;
 
   constructor() {}
 
   ngOnInit(): void {}
 
   increase() {
-    this.incrementMutation.dispatch(1);
+    incrementMutation.dispatch(1);
   }
 }

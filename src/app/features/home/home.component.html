@@ -9,6 +9,9 @@
 
   <h2>Increment state: {{ incrementState$ | async | json }}</h2>
   <h2>Decrement state: {{ decrementState$ | async | json }}</h2>
+  <ng-container *ngIf="countQuery$ | async as queryy"
+    ><div>{{ queryy | json }}</div></ng-container
+  >
 </ng-container>
 
 <app-child></app-child>

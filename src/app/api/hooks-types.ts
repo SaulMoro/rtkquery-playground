@@ -26,12 +26,22 @@ export interface MutationHooks<Definition extends MutationDefinition<any, any, a
 
 export type UseQuery<D extends QueryDefinition<any, any, any, any>> = <R = UseQueryStateDefaultResult<D>>(
   arg: QueryArgFrom<D> | Observable<QueryArgFrom<D>>,
-  options?: SubscriptionOptions & UseQueryStateOptions<D, R>
+  options?: UseQueryOptions<D, R> | Observable<UseQueryOptions<D, R>>
 ) => Observable<UseQueryStateResult<D, R> & ReturnType<UseQuerySubscription<D>>>;
+
+export type UseQueryOptions<
+  D extends QueryDefinition<any, any, any, any>,
+  R = UseQueryStateDefaultResult<D>
+> = UseQuerySubscriptionOptions & UseQueryStateOptions<D, R>;
+
+export interface UseQuerySubscriptionOptions extends SubscriptionOptions {
+  skip?: boolean | Observable<boolean>;
+  refetchOnMountOrArgChange?: boolean | number;
+}
 
 export type UseQuerySubscription<D extends QueryDefinition<any, any, any, any>> = (
   arg: QueryArgFrom<D>,
-  options?: SubscriptionOptions
+  options?: UseQuerySubscriptionOptions
 ) => Pick<QueryActionCreatorResult<D>, 'refetch'>;
 
 export type QueryStateSelector<R, D extends QueryDefinition<any, any, any, any>> = (
@@ -51,6 +61,7 @@ export type UseQueryState<D extends QueryDefinition<any, any, any, any>> = <R = 
 ) => Observable<UseQueryStateResult<D, R>>;
 
 export type UseQueryStateOptions<D extends QueryDefinition<any, any, any, any>, R> = {
+  skip?: boolean | Observable<boolean>;
   selectFromResult?: QueryStateSelector<R, D>;
 };
 
